@@ -20,9 +20,26 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
       - name: Lint
-        run: flake8 src tests --max-line-length 100
+        shell: bash
+        run: |
+          echo "=== Files linted ==="
+          git ls-files '*.py'
+          echo "=== flake8 ==="
+          flake8 src tests --max-line-length 100 --count --statistics
+          echo "=== pylint ==="
+          PYTHONPATH=src pylint src tests \
+            --disable=C0114,C0115,C0116,C0103,C0415,W1514,R0402,R0914 \
+            --max-line-length=100 --fail-under=8 | tee pylint.txt
+      - name: Lint report in summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### Lint" >> $GITHUB_STEP_SUMMARY
+          echo "Files linted:" >> $GITHUB_STEP_SUMMARY
+          git ls-files '*.py' | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+          grep "rated at" pylint.txt >> $GITHUB_STEP_SUMMARY || true
       - name: Unit tests
-        run: pytest -q
+        run: pytest -v
       - name: Start MLflow server
         run: |
           nohup mlflow server --host 127.0.0.1 --port 5000 \
