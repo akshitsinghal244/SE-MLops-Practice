@@ -1,0 +1,43 @@
+name: CD
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  train:
+    uses: ./.github/workflows/ct.yml
+
+  deploy:
+    needs: train
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: models
+          path: models
+      - name: Image name (lowercase)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+      - name: Smoke test deployed image
+        run: |
+          docker run -d -p 8000:8000 --name api $IMAGE:latest
+          for i in $(seq 1 20); do curl -sf localhost:8000/health && break; sleep 2; done
+          python3 -c "import json; print(json.dumps({'pixels': [0]*64}))" > payload.json
+          curl -sf -X POST localhost:8000/predict -H 'Content-Type: application/json' -d @payload.json

@@ -1,0 +1,13 @@
+data:
+  test_size: 0.2
+  seed: 42
+ml:
+  n_estimators: 200
+  max_depth: 12
+dl:
+  hidden: 128
+  epochs: 30
+  lr: 0.001
+  batch_size: 64
+gate:
+  min_accuracy: 0.90

@@ -1,0 +1,12 @@
+mlflow>=2.16,<3
+sqlalchemy>=2.0,<2.1
+scikit-learn
+pandas
+numpy
+matplotlib
+torch
+dvc
+pyyaml
+joblib
+pytest
+flake8

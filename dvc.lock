@@ -1,0 +1,112 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python src/prepare_data.py
+    deps:
+    - path: src/common.py
+      hash: md5
+      md5: 422a1438d6dfcab5887fbbe7af92a602
+      size: 1050
+    - path: src/prepare_data.py
+      hash: md5
+      md5: 90a96d23f01842e0d28dc484d7b1327a
+      size: 644
+    params:
+      params.yaml:
+        data:
+          test_size: 0.2
+          seed: 42
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: 534f8939ca8ab8f44c41bcd087f210fb.dir
+      size: 497821
+      nfiles: 2
+  train_ml:
+    cmd: python src/train_ml.py
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: 534f8939ca8ab8f44c41bcd087f210fb.dir
+      size: 497821
+      nfiles: 2
+    - path: src/common.py
+      hash: md5
+      md5: 422a1438d6dfcab5887fbbe7af92a602
+      size: 1050
+    - path: src/train_ml.py
+      hash: md5
+      md5: 37e7f09ac9fac1ed6a83f9ec4d544f17
+      size: 1634
+    params:
+      params.yaml:
+        data.seed: 42
+        ml:
+          n_estimators: 200
+          max_depth: 12
+    outs:
+    - path: metrics/ml.json
+      hash: md5
+      md5: 4f4ba1cc993dec44e0bf8892f86a51b8
+      size: 72
+    - path: models/ml_model.joblib
+      hash: md5
+      md5: c427a11aa332c49cfd996bdd3a0d103f
+      size: 9742729
+  train_dl:
+    cmd: python src/train_dl.py
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: 534f8939ca8ab8f44c41bcd087f210fb.dir
+      size: 497821
+      nfiles: 2
+    - path: src/common.py
+      hash: md5
+      md5: 422a1438d6dfcab5887fbbe7af92a602
+      size: 1050
+    - path: src/train_dl.py
+      hash: md5
+      md5: 18020b14c7eb7cb3e343c9ff575fe91a
+      size: 2864
+    params:
+      params.yaml:
+        data.seed: 42
+        dl:
+          hidden: 128
+          epochs: 30
+          lr: 0.001
+          batch_size: 64
+    outs:
+    - path: metrics/dl.json
+      hash: md5
+      md5: 7294cdc5e0a54c47cb7bea140b8a1629
+      size: 59
+    - path: models/dl_model.pt
+      hash: md5
+      md5: aeec4209f991333da6abf95fec0701ce
+      size: 71905
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - path: metrics/dl.json
+      hash: md5
+      md5: 7294cdc5e0a54c47cb7bea140b8a1629
+      size: 59
+    - path: metrics/ml.json
+      hash: md5
+      md5: 4f4ba1cc993dec44e0bf8892f86a51b8
+      size: 72
+    - path: src/evaluate.py
+      hash: md5
+      md5: bc8598c7327f47cab01c77409ffa212d
+      size: 853
+    params:
+      params.yaml:
+        gate:
+          min_accuracy: 0.9
+    outs:
+    - path: metrics/summary.json
+      hash: md5
+      md5: 98ae53cbd72e98c4f6c2cea070bff82f
+      size: 113

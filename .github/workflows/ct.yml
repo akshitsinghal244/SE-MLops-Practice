@@ -1,0 +1,47 @@
+name: CT (continuous training)
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # every Monday 03:00 UTC
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    env:
+      MLFLOW_TRACKING_URI: http://127.0.0.1:5000
+      REGISTER_MODEL: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Start MLflow server
+        run: |
+          nohup mlflow server --host 127.0.0.1 --port 5000 \
+            --backend-store-uri sqlite:///mlflow.db \
+            --artifacts-destination ./mlartifacts > mlflow.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:5000/health && break; sleep 2; done
+      - name: Retrain (registers models in MLflow registry)
+        run: dvc repro --force
+      - name: Metrics summary
+        if: always()
+        run: dvc metrics show --md >> $GITHUB_STEP_SUMMARY || true
+      - name: Upload MLflow results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-results-ct
+          path: |
+            mlflow.db
+            mlartifacts
+      - name: Upload trained models
+        uses: actions/upload-artifact@v4
+        with:
+          name: models
+          path: models

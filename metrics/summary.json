@@ -1,0 +1,6 @@
+{
+  "ml_accuracy": 0.9611111111111111,
+  "dl_accuracy": 0.975,
+  "best_model": "dl",
+  "gate_passed": true
+}
