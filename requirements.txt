@@ -10,3 +10,4 @@ pyyaml
 joblib
 pytest
 flake8
+pylint
